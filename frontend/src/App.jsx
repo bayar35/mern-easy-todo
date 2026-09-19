@@ -15,7 +15,7 @@ function App() {
   // Токен өөрчлөгдөх бүрт серверээс түүнд тохирох тэмдэглэлийг татах
   useEffect(() => {
     if (token) {
-      axios.get('http://localhost:5000/api/todos', {
+      axios.get('https://easy-todo-backend.onrender.com/api/todos', {
         headers: { 'Authorization': token } // Хамгаалалттай API руу токен илгээх
       })
         .then(res => setTodos(res.data))
@@ -31,7 +31,7 @@ function App() {
     setError('');
     const url = isRegister ? 'register' : 'login';
 
-    axios.post(`http://localhost:5000/api/auth/${url}`, {
+    axios.post(`https://easy-todo-backend.onrender.com/api/auth/${url}`, {
       username: authInput.user,
       password: authInput.pass
     })
@@ -62,7 +62,7 @@ function App() {
 
   const addTodo = () => {
     if (!input) return;
-    axios.post('http://localhost:5000/api/todos', { text: input }, { headers: { 'Authorization': token } })
+    axios.post('https://easy-todo-backend.onrender.com/api/todos', { text: input }, { headers: { 'Authorization': token } })
       .then(res => {
         setTodos([...todos, res.data]);
         setInput('');
@@ -70,14 +70,14 @@ function App() {
   };
 
   const toggleComplete = (id) => {
-    axios.put(`http://localhost:5000/api/todos/${id}`, {}, { headers: { 'Authorization': token } })
+    axios.put(`https://easy-todo-backend.onrender.com/api/todos/${id}`, {}, { headers: { 'Authorization': token } })
       .then(res => {
         setTodos(todos.map(todo => todo._id === id ? res.data : todo));
       });
   };
 
   const deleteTodo = (id) => {
-    axios.delete(`http://localhost:5000/api/todos/${id}`, { headers: { 'Authorization': token } })
+    axios.delete(`https://easy-todo-backend.onrender.com/api/todos/${id}`, { headers: { 'Authorization': token } })
       .then(() => {
         setTodos(todos.filter(todo => todo._id !== id));
       });
