@@ -1,19 +1,86 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const authRoutes = require('./routes/authRoutes');
-const todoRoutes = require('./routes/todoRoutes');
+const http = require('http');
+const { Server } = require('socket.io');
+require('dotenv').config();
 
 const app = express();
+const server = http.createServer(app);
+
+// ✅ CORS — local + Vercel + Render
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://mern-easy-todo.vercel.app',           // ← Таны Vercel URL
+  'https://mern-easy-todo-git-main-*.vercel.app', // preview deployments
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (
+        allowedOrigins.some((o) => origin.startsWith(o.replace('*', ''))) ||
+        origin.endsWith('.vercel.app')
+      ) {
+        return callback(null, true);
+      }
+      callback(new Error('CORS-д зөвшөөрөгдөөгүй'));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
-app.use(cors());
 
-mongoose.connect('mongodb+srv://bayaryo:bayar456@cluster0.kmijiq0.mongodb.net/easy-todo?appName=Cluster0')
-  .then(() => console.log("MongoDB Atlas-тай амжилттай холбогдлоо!🚀"))
-  .catch(err => console.log(err));
+// Socket.io CORS
+const io = new Server(server, {
+  cors: {
+    origin: (origin, callback) => {
+      if (!origin || origin.endsWith('.vercel.app') || origin.includes('localhost')) {
+        return callback(null, true);
+      }
+      callback(new Error('Socket CORS-д зөвшөөрөгдөөгүй'));
+    },
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+});
 
-// Замуудыг холбох
-app.use('/api/auth', authRoutes);
-app.use('/api/todos', todoRoutes);
+// Routes
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/todos', require('./routes/todoRoutes'));
+app.use('/api/messages', require('./routes/messageRoutes'));
+app.use('/api/products', require('./routes/productRoutes'));
 
-app.listen(5000, () => console.log("Сервер 5000 порт дээр ажиллаж байна."));
+// Health check
+app.get('/', (req, res) => res.json({ status: 'ok', message: 'API ажиллаж байна' }));
+
+// Socket.io
+io.on('connection', (socket) => {
+  console.log('Хэрэглэгч холбогдлоо:', socket.id);
+
+  socket.on('sendMessage', async (data) => {
+    io.emit('receiveMessage', {
+      _id: Date.now().toString(),
+      sender: data.sender,
+      text: data.text,
+      createdAt: new Date(),
+    });
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Хэрэглэгч салсан:', socket.id);
+  });
+});
+
+// MongoDB
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log('MongoDB-тай амжилттай холбогдлоо!'))
+  .catch((err) => console.error('MongoDB алдаа:', err));
+
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Сервер ${PORT} порт дээр ажиллаж байна.`);
+});

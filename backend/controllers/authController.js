@@ -23,7 +23,7 @@ exports.login = async (req, res) => {
     if (!user) return res.status(400).json({ message: "Нэр эсвэл нууц үг буруу" });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: "Нэр эсвэл нууц үг buruu" });
+    if (!isMatch) return res.status(400).json({ message: "Нэр эсвэл нууц үг буруу" });
 
     const token = jwt.sign({ userId: user._id }, JWT_SECRET);
     res.json({ token, username: user.username });
