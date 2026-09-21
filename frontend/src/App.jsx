@@ -2,32 +2,42 @@ import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { io } from 'socket.io-client';
 
-// 🌐 БЭКЭНД СЕРВЕРИЙН ХАЯГ (Render дээрх backend)
-const API_URL = 'https://easy-todo-backend.onrender.com';
-// const API_URL = 'https://easy-todo-backend.onrender.com';
+// 🌐 Backend URL — орчны хувьсагчаас унших
+const API_URL =
+  import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const socket = io(API_URL);
+
 function App() {
   const [activeTab, setActiveTab] = useState('todo');
 
+  // 📋 Todo states
   const [todos, setTodos] = useState([]);
   const [input, setInput] = useState('');
   const [category, setCategory] = useState('Хувийн');
   const [dueDate, setDueDate] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Бүгд');
 
+  // 💬 Chat states
   const [messages, setMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const chatEndRef = useRef(null);
 
+  // 🛒 Shop states
   const [products, setProducts] = useState([]);
   const [cart, setCart] = useState([]);
 
-  const [token, setToken] = useState(localStorage.getItem('token') || '');
-  const [username, setUsername] = useState(localStorage.getItem('username') || '');
+  // 🔐 Auth states
+  const [token, setToken] = useState(
+    localStorage.getItem('token') || ''
+  );
+  const [username, setUsername] = useState(
+    localStorage.getItem('username') || ''
+  );
   const [isRegister, setIsRegister] = useState(false);
   const [authInput, setAuthInput] = useState({ user: '', pass: '' });
   const [error, setError] = useState('');
 
+  // Гарах
   const handleLogout = () => {
     localStorage.clear();
     setToken('');
@@ -37,6 +47,7 @@ function App() {
     setCart([]);
   };
 
+  // 1️⃣ Todo татах
   useEffect(() => {
     if (token && activeTab === 'todo') {
       axios
@@ -50,6 +61,7 @@ function App() {
     }
   }, [token, selectedCategory, activeTab]);
 
+  // 2️⃣ Чат татах + Socket сонсох
   useEffect(() => {
     if (token && activeTab === 'chat') {
       axios
@@ -67,10 +79,12 @@ function App() {
     }
   }, [token, activeTab]);
 
+  // Чат доош гүйлгэх
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // 3️⃣ Дэлгүүр татах
   useEffect(() => {
     if (token && activeTab === 'shop') {
       axios
@@ -82,10 +96,12 @@ function App() {
     }
   }, [token, activeTab]);
 
+  // 🔐 Нэвтрэх / Бүртгүүлэх
   const handleAuth = (e) => {
     e.preventDefault();
     setError('');
     const url = isRegister ? 'register' : 'login';
+
     axios
       .post(`${API_URL}/api/auth/${url}`, {
         username: authInput.user,
@@ -108,6 +124,7 @@ function App() {
       );
   };
 
+  // 📋 Todo үйлдлүүд
   const addTodo = () => {
     if (!input.trim()) return;
     axios
@@ -121,7 +138,9 @@ function App() {
         setInput('');
         setDueDate('');
       })
-      .catch((err) => alert(err.response?.data?.message || 'Алдаа'));
+      .catch((err) =>
+        alert(err.response?.data?.message || 'Алдаа')
+      );
   };
 
   const toggleComplete = (id) => {
@@ -132,7 +151,9 @@ function App() {
         { headers: { Authorization: `Bearer ${token}` } }
       )
       .then((res) =>
-        setTodos(todos.map((todo) => (todo._id === id ? res.data : todo)))
+        setTodos(
+          todos.map((todo) => (todo._id === id ? res.data : todo))
+        )
       )
       .catch(() => {});
   };
@@ -142,24 +163,37 @@ function App() {
       .delete(`${API_URL}/api/todos/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
-      .then(() => setTodos(todos.filter((todo) => todo._id !== id)))
+      .then(() =>
+        setTodos(todos.filter((todo) => todo._id !== id))
+      )
       .catch(() => {});
   };
 
+  // 💬 Чат илгээх
   const sendChatMessage = (e) => {
     e.preventDefault();
     if (!chatInput.trim()) return;
-    socket.emit('sendMessage', { sender: username, text: chatInput });
+
+    socket.emit('sendMessage', {
+      sender: username,
+      text: chatInput,
+    });
     setChatInput('');
   };
 
+  // 🛒 Сагс
   const addToCart = (product) => {
     setCart((prevCart) => {
-      const exists = prevCart.find((item) => item._id === product._id);
-      if (exists)
+      const exists = prevCart.find(
+        (item) => item._id === product._id
+      );
+      if (exists) {
         return prevCart.map((item) =>
-          item._id === product._id ? { ...item, qty: item.qty + 1 } : item
+          item._id === product._id
+            ? { ...item, qty: item.qty + 1 }
+            : item
         );
+      }
       return [...prevCart, { ...product, qty: 1 }];
     });
   };
@@ -169,6 +203,7 @@ function App() {
     0
   );
 
+  // ================= LOGIN SCREEN =================
   if (!token) {
     return (
       <div
@@ -183,10 +218,18 @@ function App() {
         }}
       >
         <h2>{isRegister ? 'Бүртгүүлэх 📝' : 'Нэвтрэх 🔒'}</h2>
-        {error && <p style={{ color: 'red', fontSize: '14px' }}>{error}</p>}
+
+        {error && (
+          <p style={{ color: 'red', fontSize: '14px' }}>{error}</p>
+        )}
+
         <form
           onSubmit={handleAuth}
-          style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '10px',
+          }}
         >
           <input
             type="text"
@@ -195,7 +238,11 @@ function App() {
             onChange={(e) =>
               setAuthInput({ ...authInput, user: e.target.value })
             }
-            style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+            style={{
+              padding: '10px',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
+            }}
             required
           />
           <input
@@ -205,7 +252,11 @@ function App() {
             onChange={(e) =>
               setAuthInput({ ...authInput, pass: e.target.value })
             }
-            style={{ padding: '10px', borderRadius: '4px', border: '1px solid #ccc' }}
+            style={{
+              padding: '10px',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
+            }}
             required
           />
           <button
@@ -222,6 +273,7 @@ function App() {
             {isRegister ? 'Бүртгүүлэх' : 'Нэвтрэх'}
           </button>
         </form>
+
         <p
           style={{
             marginTop: '15px',
@@ -232,12 +284,15 @@ function App() {
           }}
           onClick={() => setIsRegister(!isRegister)}
         >
-          {isRegister ? 'Бүртгэлтэй юу? Нэвтрэх' : 'Шинэ үү? Бүртгүүлэх'}
+          {isRegister
+            ? 'Бүртгэлтэй юу? Нэвтрэх'
+            : 'Шинэ үү? Бүртгүүлэх'}
         </p>
       </div>
     );
   }
 
+  // ================= MAIN APP =================
   return (
     <div
       style={{
@@ -249,6 +304,7 @@ function App() {
         borderRadius: '12px',
       }}
     >
+      {/* HEADER */}
       <div
         style={{
           display: 'flex',
@@ -277,6 +333,7 @@ function App() {
         </button>
       </div>
 
+      {/* TABS */}
       <div
         style={{
           display: 'flex',
@@ -301,10 +358,13 @@ function App() {
               border: 'none',
               borderRadius: '6px',
               cursor: 'pointer',
-              backgroundColor: activeTab === tab.key ? 'white' : 'transparent',
+              backgroundColor:
+                activeTab === tab.key ? 'white' : 'transparent',
               fontWeight: activeTab === tab.key ? 'bold' : 'normal',
               boxShadow:
-                activeTab === tab.key ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
+                activeTab === tab.key
+                  ? '0 2px 4px rgba(0,0,0,0.1)'
+                  : 'none',
             }}
           >
             {tab.label}
@@ -312,8 +372,10 @@ function App() {
         ))}
       </div>
 
+      {/* ========== 1. TODO TAB ========== */}
       {activeTab === 'todo' && (
         <div>
+          {/* Форм */}
           <div
             style={{
               display: 'flex',
@@ -329,13 +391,22 @@ function App() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Юу хийх вэ..."
-              style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '4px' }}
+              style={{
+                padding: '10px',
+                border: '1px solid #ccc',
+                borderRadius: '4px',
+              }}
             />
             <div style={{ display: 'flex', gap: '10px' }}>
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                style={{ padding: '8px', flex: 1, borderRadius: '4px', border: '1px solid #ccc' }}
+                style={{
+                  padding: '8px',
+                  flex: 1,
+                  borderRadius: '4px',
+                  border: '1px solid #ccc',
+                }}
               >
                 <option value="Хувийн">🏠 Хувийн</option>
                 <option value="Ажил">💼 Ажил</option>
@@ -345,7 +416,12 @@ function App() {
                 type="date"
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
-                style={{ padding: '8px', flex: 1, borderRadius: '4px', border: '1px solid #ccc' }}
+                style={{
+                  padding: '8px',
+                  flex: 1,
+                  borderRadius: '4px',
+                  border: '1px solid #ccc',
+                }}
               />
             </div>
             <button
@@ -364,7 +440,14 @@ function App() {
             </button>
           </div>
 
-          <div style={{ display: 'flex', gap: '5px', marginBottom: '15px' }}>
+          {/* Шүүлтүүр */}
+          <div
+            style={{
+              display: 'flex',
+              gap: '5px',
+              marginBottom: '15px',
+            }}
+          >
             {['Бүгд', 'Хувийн', 'Ажил', 'Хичээл'].map((cat) => (
               <button
                 key={cat}
@@ -376,7 +459,8 @@ function App() {
                   cursor: 'pointer',
                   backgroundColor:
                     selectedCategory === cat ? '#007BFF' : 'white',
-                  color: selectedCategory === cat ? 'white' : '#333',
+                  color:
+                    selectedCategory === cat ? 'white' : '#333',
                 }}
               >
                 {cat}
@@ -384,6 +468,7 @@ function App() {
             ))}
           </div>
 
+          {/* Жагсаалт */}
           <ul style={{ paddingLeft: '0', listStyle: 'none' }}>
             {todos.map((todo) => (
               <li
@@ -394,7 +479,9 @@ function App() {
                   padding: '12px 10px',
                   borderBottom: '1px solid #eee',
                   alignItems: 'center',
-                  backgroundColor: todo.completed ? '#f1f1f1' : 'white',
+                  backgroundColor: todo.completed
+                    ? '#f1f1f1'
+                    : 'white',
                 }}
               >
                 <div
@@ -403,7 +490,9 @@ function App() {
                 >
                   <span
                     style={{
-                      textDecoration: todo.completed ? 'line-through' : 'none',
+                      textDecoration: todo.completed
+                        ? 'line-through'
+                        : 'none',
                       color: todo.completed ? '#888' : '#333',
                     }}
                   >
@@ -420,7 +509,9 @@ function App() {
                   >
                     🏷️ {todo.category}
                     {todo.dueDate &&
-                      ` ⏰ ${new Date(todo.dueDate).toLocaleDateString()}`}
+                      ` ⏰ ${new Date(
+                        todo.dueDate
+                      ).toLocaleDateString()}`}
                   </div>
                 </div>
                 <button
@@ -442,6 +533,7 @@ function App() {
         </div>
       )}
 
+      {/* ========== 2. CHAT TAB ========== */}
       {activeTab === 'chat' && (
         <div>
           <div
@@ -460,7 +552,8 @@ function App() {
                 key={msg._id || index}
                 style={{
                   marginBottom: '10px',
-                  textAlign: msg.sender === username ? 'right' : 'left',
+                  textAlign:
+                    msg.sender === username ? 'right' : 'left',
                 }}
               >
                 <div
@@ -478,8 +571,11 @@ function App() {
                     padding: '8px 12px',
                     borderRadius: '12px',
                     backgroundColor:
-                      msg.sender === username ? '#007BFF' : '#e9e9e9',
-                    color: msg.sender === username ? 'white' : 'black',
+                      msg.sender === username
+                        ? '#007BFF'
+                        : '#e9e9e9',
+                    color:
+                      msg.sender === username ? 'white' : 'black',
                     maxWidth: '70%',
                     wordBreak: 'break-word',
                   }}
@@ -490,7 +586,11 @@ function App() {
             ))}
             <div ref={chatEndRef} />
           </div>
-          <form onSubmit={sendChatMessage} style={{ display: 'flex', gap: '5px' }}>
+
+          <form
+            onSubmit={sendChatMessage}
+            style={{ display: 'flex', gap: '5px' }}
+          >
             <input
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
@@ -519,8 +619,10 @@ function App() {
         </div>
       )}
 
+      {/* ========== 3. SHOP TAB ========== */}
       {activeTab === 'shop' && (
         <div style={{ display: 'flex', gap: '15px' }}>
+          {/* Бараанууд */}
           <div
             style={{
               flex: 2,
@@ -550,7 +652,12 @@ function App() {
                     borderRadius: '4px',
                   }}
                 />
-                <h4 style={{ margin: '8px 0 4px 0', fontSize: '14px' }}>
+                <h4
+                  style={{
+                    margin: '8px 0 4px 0',
+                    fontSize: '14px',
+                  }}
+                >
                   {prod.name}
                 </h4>
                 <p
@@ -581,6 +688,7 @@ function App() {
             ))}
           </div>
 
+          {/* Сагс */}
           <div
             style={{
               flex: 1,
@@ -602,7 +710,9 @@ function App() {
               🛒 Сагс
             </h3>
             {cart.length === 0 ? (
-              <p style={{ fontSize: '12px', color: '#888' }}>Сагс хоосон.</p>
+              <p style={{ fontSize: '12px', color: '#888' }}>
+                Сагс хоосон.
+              </p>
             ) : (
               <>
                 <ul
@@ -640,7 +750,9 @@ function App() {
                   }}
                 >
                   Нийт:{' '}
-                  <span style={{ color: '#ff5722', fontWeight: 'bold' }}>
+                  <span
+                    style={{ color: '#ff5722', fontWeight: 'bold' }}
+                  >
                     {cartTotal.toLocaleString()} ₮
                   </span>
                 </div>

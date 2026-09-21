@@ -3,7 +3,9 @@ const Message = require('../models/Message');
 // Бүх мессеж авах
 exports.getMessages = async (req, res) => {
   try {
-    const messages = await Message.find().sort({ createdAt: 1 }).limit(100);
+    const messages = await Message.find()
+      .sort({ createdAt: 1 })
+      .limit(100);
     res.json(messages);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -14,6 +16,13 @@ exports.getMessages = async (req, res) => {
 exports.createMessage = async (req, res) => {
   try {
     const { sender, text } = req.body;
+
+    if (!sender || !text) {
+      return res
+        .status(400)
+        .json({ message: 'Sender болон text шаардлагатай' });
+    }
+
     const message = new Message({ sender, text });
     await message.save();
     res.status(201).json(message);

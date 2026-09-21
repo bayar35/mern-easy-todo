@@ -1,49 +1,80 @@
 const Todo = require('../models/Todo');
 
-// Бүх тэмдэглэлийг авах (Шүүлтүүртэй болгосон)
+// Бүх todo авах (category-аар шүүх)
 exports.getTodos = async (req, res) => {
   try {
-    const { category } = req.query; // Вэбээс /api/todos?category=Ажил гэж орж ирвэл шүүнэ
-    let query = { userId: req.userId };
+    const { category } = req.query;
+    const filter = { userId: req.userId };
 
     if (category && category !== 'Бүгд') {
-      query.category = category;
+      filter.category = category;
     }
 
-    const todos = await Todo.find(query).sort({ createdAt: -1 }); // Шинэ нь дээрээ харагдана
+    const todos = await Todo.find(filter).sort({ createdAt: -1 });
     res.json(todos);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// Шинэ тэмдэглэл үүсгэх (Категори, Хугацаатай)
+// Шинэ todo нэмэх
 exports.createTodo = async (req, res) => {
   try {
     const { text, category, dueDate } = req.body;
-    const newTodo = new Todo({ 
-      text, 
-      category, 
-      dueDate, 
-      userId: req.userId 
+
+    if (!text) {
+      return res.status(400).json({ message: 'Текст шаардлагатай' });
+    }
+
+    const todo = new Todo({
+      userId: req.userId,
+      text,
+      category: category || 'Хувийн',
+      dueDate: dueDate || undefined,
+      completed: false,
     });
-    await newTodo.save();
-    res.json(newTodo);
+
+    await todo.save();
+    res.status(201).json(todo);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
+// Todo toggle хийх (complete/incomplete)
 exports.toggleTodo = async (req, res) => {
-  const todo = await Todo.findOne({ _id: req.params.id, userId: req.userId });
-  if (!todo) return res.status(404).json({ message: "Олдсонгүй" });
-  todo.completed = !todo.completed;
-  await todo.save();
-  res.json(todo);
+  try {
+    const todo = await Todo.findOne({
+      _id: req.params.id,
+      userId: req.userId,
+    });
+
+    if (!todo) {
+      return res.status(404).json({ message: 'Олдсонгүй' });
+    }
+
+    todo.completed = !todo.completed;
+    await todo.save();
+    res.json(todo);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
+// Todo устгах
 exports.deleteTodo = async (req, res) => {
-  const todo = await Todo.findOneAndDelete({ _id: req.params.id, userId: req.userId });
-  if (!todo) return res.status(404).json({ message: "Олдсонгүй" });
-  res.json({ message: "Устгагдлаа" });
+  try {
+    const result = await Todo.findOneAndDelete({
+      _id: req.params.id,
+      userId: req.userId,
+    });
+
+    if (!result) {
+      return res.status(404).json({ message: 'Олдсонгүй' });
+    }
+
+    res.json({ message: 'Устгагдлаа' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

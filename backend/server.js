@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
+require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
@@ -50,7 +51,7 @@ const io = new Server(server, {
   },
 });
 
-// ✅ Routes — try/catch-тай
+// ✅ Routes
 const routes = [
   { path: '/api/auth', file: './routes/authRoutes' },
   { path: '/api/todos', file: './routes/todoRoutes' },
@@ -80,13 +81,19 @@ app.get('/', (req, res) => {
 io.on('connection', (socket) => {
   console.log('Хэрэглэгч холбогдлоо:', socket.id);
 
-  socket.on('sendMessage', (data) => {
-    io.emit('receiveMessage', {
-      _id: Date.now().toString(),
-      sender: data.sender,
-      text: data.text,
-      createdAt: new Date(),
-    });
+  socket.on('sendMessage', async (data) => {
+    try {
+      const Message = require('./models/Message');
+      const newMessage = new Message({
+        sender: data.sender,
+        text: data.text,
+      });
+      await newMessage.save();
+
+      io.emit('receiveMessage', newMessage);
+    } catch (err) {
+      console.error('Мессеж хадгалах алдаа:', err.message);
+    }
   });
 
   socket.on('disconnect', () => {
@@ -95,16 +102,18 @@ io.on('connection', (socket) => {
 });
 
 // ✅ MongoDB — зөвхөн 1 удаа холбох
-const MONGO_URI =
-  process.env.MONGO_URI ||
-  'mongodb+srv://bayaryo:bayar456@cluster0.kmijiq0.mongodb.net/easy-todo?appName=Cluster0';
+const MONGO_URI = process.env.MONGO_URI;
+if (!MONGO_URI) {
+  console.error('❌ MONGO_URI тохируулагдаагүй байна!');
+  process.exit(1);
+}
 
 mongoose
   .connect(MONGO_URI)
   .then(() => console.log('✅ MongoDB-тай амжилттай холбогдлоо!'))
   .catch((err) => console.error('❌ MongoDB алдаа:', err.message));
 
-// ✅ Server эхлүүлэх — зөвхөн 1 удаа
+// ✅ Server эхлүүлэх
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Сервер ${PORT} порт дээр ажиллаж байна.`);

@@ -7,10 +7,21 @@ const TodoSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
-    text: { type: String, required: true },
-    category: { type: String, default: 'Хувийн' },
-    dueDate: { type: Date },
-    completed: { type: Boolean, default: false },
+    text: {
+      type: String,
+      required: true,
+    },
+    category: {
+      type: String,
+      default: 'Хувийн',
+    },
+    dueDate: {
+      type: Date,
+    },
+    completed: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
