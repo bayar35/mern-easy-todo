@@ -1,13 +1,17 @@
 const Todo = require('../models/Todo');
 
-// Бүх todo авах (category-аар шүүх)
+// Бүх todo авах (category + search)
 exports.getTodos = async (req, res) => {
   try {
-    const { category } = req.query;
+    const { category, search } = req.query;
     const filter = { userId: req.userId };
 
     if (category && category !== 'Бүгд') {
       filter.category = category;
+    }
+
+    if (search && search.trim()) {
+      filter.text = { $regex: search.trim(), $options: 'i' };
     }
 
     const todos = await Todo.find(filter).sort({ createdAt: -1 });
@@ -21,10 +25,6 @@ exports.getTodos = async (req, res) => {
 exports.createTodo = async (req, res) => {
   try {
     const { text, category, dueDate } = req.body;
-
-    if (!text) {
-      return res.status(400).json({ message: 'Текст шаардлагатай' });
-    }
 
     const todo = new Todo({
       userId: req.userId,
@@ -41,7 +41,7 @@ exports.createTodo = async (req, res) => {
   }
 };
 
-// Todo toggle хийх (complete/incomplete)
+// Todo toggle (complete/incomplete)
 exports.toggleTodo = async (req, res) => {
   try {
     const todo = await Todo.findOne({
@@ -54,6 +54,32 @@ exports.toggleTodo = async (req, res) => {
     }
 
     todo.completed = !todo.completed;
+    await todo.save();
+    res.json(todo);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ✨ ШИНЭ: Todo засах (edit)
+exports.updateTodo = async (req, res) => {
+  try {
+    const { text, category, dueDate, completed } = req.body;
+
+    const todo = await Todo.findOne({
+      _id: req.params.id,
+      userId: req.userId,
+    });
+
+    if (!todo) {
+      return res.status(404).json({ message: 'Олдсонгүй' });
+    }
+
+    if (text !== undefined) todo.text = text;
+    if (category !== undefined) todo.category = category;
+    if (dueDate !== undefined) todo.dueDate = dueDate || undefined;
+    if (completed !== undefined) todo.completed = completed;
+
     await todo.save();
     res.json(todo);
   } catch (err) {
