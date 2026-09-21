@@ -1,40 +1,28 @@
 const Product = require('../models/Product');
 
-// Бүх бүтээгдэхүүн авах
 exports.getProducts = async (req, res) => {
   try {
     let products = await Product.find();
 
-    // Хэрэв DB хоосон бол жишээ бүтээгдэхүүн үүсгэх
     if (products.length === 0) {
       const sampleProducts = [
         {
-          name: 'Пүүз',
-          price: 120000,
-          image:
-            'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400',
-          description: 'Маш чанартай пүүз',
+          name: 'Спортын Пүүз',
+          price: 150000,
+          image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=300&fit=crop',
+          description: 'Маш чанартай, шинэ бараа.',
         },
         {
-          name: 'Цамц',
-          price: 45000,
-          image:
-            'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400',
-          description: 'Хөнгөн цамц',
+          name: 'Ухаалаг Цар',
+          price: 280000,
+          image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=300&fit=crop',
+          description: 'Маш чанартай, шинэ бараа.',
         },
         {
-          name: 'Малгай',
-          price: 25000,
-          image:
-            'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=400',
-          description: 'Дулаан малгай',
-        },
-        {
-          name: 'Цүнх',
-          price: 85000,
-          image:
-            'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400',
-          description: 'Аялалын цүнх',
+          name: 'Чихэвч (Wireless)',
+          price: 95000,
+          image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop',
+          description: 'Маш чанартай, шинэ бараа.',
         },
       ];
       products = await Product.insertMany(sampleProducts);
