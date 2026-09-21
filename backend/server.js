@@ -3,17 +3,15 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
-require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
 
-// ✅ CORS — local + Vercel + Render
+// ✅ CORS тохиргоо
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  'https://mern-easy-todo.vercel.app',           // ← Таны Vercel URL
-  'https://mern-easy-todo-git-main-*.vercel.app', // preview deployments
+  'https://mern-easy-todo.vercel.app',
 ];
 
 app.use(
@@ -21,23 +19,28 @@ app.use(
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (
-        allowedOrigins.some((o) => origin.startsWith(o.replace('*', ''))) ||
+        allowedOrigins.includes(origin) ||
         origin.endsWith('.vercel.app')
       ) {
         return callback(null, true);
       }
-      callback(new Error('CORS-д зөвшөөрөгдөөгүй'));
+      callback(new Error('CORS-д зөвшөөрөгдөөгүй: ' + origin));
     },
     credentials: true,
   })
 );
+
 app.use(express.json());
 
-// Socket.io CORS
+// ✅ Socket.io тохиргоо
 const io = new Server(server, {
   cors: {
     origin: (origin, callback) => {
-      if (!origin || origin.endsWith('.vercel.app') || origin.includes('localhost')) {
+      if (
+        !origin ||
+        origin.endsWith('.vercel.app') ||
+        origin.includes('localhost')
+      ) {
         return callback(null, true);
       }
       callback(new Error('Socket CORS-д зөвшөөрөгдөөгүй'));
@@ -47,20 +50,37 @@ const io = new Server(server, {
   },
 });
 
-// Routes
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/todos', require('./routes/todoRoutes'));
-app.use('/api/messages', require('./routes/messageRoutes'));
-app.use('/api/products', require('./routes/productRoutes'));
+// ✅ Routes — try/catch-тай
+const routes = [
+  { path: '/api/auth', file: './routes/authRoutes' },
+  { path: '/api/todos', file: './routes/todoRoutes' },
+  { path: '/api/messages', file: './routes/messageRoutes' },
+  { path: '/api/products', file: './routes/productRoutes' },
+];
 
-// Health check
-app.get('/', (req, res) => res.json({ status: 'ok', message: 'API ажиллаж байна' }));
+routes.forEach(({ path, file }) => {
+  try {
+    app.use(path, require(file));
+    console.log(`✅ Route бүртгэгдлээ: ${path}`);
+  } catch (err) {
+    console.error(`❌ Route алдаа (${path}):`, err.message);
+  }
+});
 
-// Socket.io
+// ✅ Health check
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'API ажиллаж байна',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// ✅ Socket.io холболт
 io.on('connection', (socket) => {
   console.log('Хэрэглэгч холбогдлоо:', socket.id);
 
-  socket.on('sendMessage', async (data) => {
+  socket.on('sendMessage', (data) => {
     io.emit('receiveMessage', {
       _id: Date.now().toString(),
       sender: data.sender,
@@ -74,13 +94,18 @@ io.on('connection', (socket) => {
   });
 });
 
-// MongoDB
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB-тай амжилттай холбогдлоо!'))
-  .catch((err) => console.error('MongoDB алдаа:', err));
+// ✅ MongoDB — зөвхөн 1 удаа холбох
+const MONGO_URI =
+  process.env.MONGO_URI ||
+  'mongodb+srv://bayaryo:bayar456@cluster0.kmijiq0.mongodb.net/easy-todo?appName=Cluster0';
 
+mongoose
+  .connect(MONGO_URI)
+  .then(() => console.log('✅ MongoDB-тай амжилттай холбогдлоо!'))
+  .catch((err) => console.error('❌ MongoDB алдаа:', err.message));
+
+// ✅ Server эхлүүлэх — зөвхөн 1 удаа
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`Сервер ${PORT} порт дээр ажиллаж байна.`);
+  console.log(`🚀 Сервер ${PORT} порт дээр ажиллаж байна.`);
 });

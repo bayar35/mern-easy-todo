@@ -4,6 +4,7 @@ import { io } from 'socket.io-client';
 
 // 🌐 БЭКЭНД СЕРВЕРИЙН ХАЯГ (Render дээрх backend)
 const API_URL = 'https://easy-todo-backend.onrender.com';
+// const API_URL = 'https://easy-todo-backend.onrender.com';
 const socket = io(API_URL);
 function App() {
   const [activeTab, setActiveTab] = useState('todo');

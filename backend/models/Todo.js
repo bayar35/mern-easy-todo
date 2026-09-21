@@ -1,12 +1,18 @@
 const mongoose = require('mongoose');
 
-const TodoSchema = new mongoose.Schema({ 
-  text: { type: String, required: true },
-  completed: { type: Boolean, default: false },
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  // 📝 ШИНЭЭР НЭМЭГДСЭН:
-  category: { type: String, default: 'Хувийн' }, // Ажил, Хувийн, Хичээл гэх мэт
-  dueDate: { type: Date } // Хийж дуусгах эцсийн хугацаа
-}, { timestamps: true }); // Хэзээ үүсгэснийг автоматаар хадгална (createdAt)
+const TodoSchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    text: { type: String, required: true },
+    category: { type: String, default: 'Хувийн' },
+    dueDate: { type: Date },
+    completed: { type: Boolean, default: false },
+  },
+  { timestamps: true }
+);
 
 module.exports = mongoose.model('Todo', TodoSchema);
